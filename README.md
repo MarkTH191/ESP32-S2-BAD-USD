@@ -1,14 +1,21 @@
 ESP32-S2-BAD-USD
 
+วิธี flash ลงบอร์ด
+
+1.โหลดไฟล์ code.bin
+
+2.ไปที่เว็บ https://espressif.github.io/esptool-js/
+
+3.กดเชื่อมบอร์ดและอัพโหลดไฟล์ code.bin เข้าไปในเว็บและกด flash ได้เลย
+
+
+
 วิธีใช้งาน
 
-1.อัปโหลดโค้ดไปที่บอร์ด ESP32-S2 ของคุณ
+1.เชื่อมต่อ Wi-Fi ชื่อ MarkTV รหัสเริ่มต้น: subtomarktv
 
-2.เชื่อมต่อ Wi-Fi ชื่อ MarkTV (รหัสเริ่มต้น: subtomarktv)
+2.เปิดเว็บเบราว์เซอร์ไปที่ http://cybercontrol.local
 
-3.เปิดเว็บเบราว์เซอร์ไปที่ http://cybercontrol.local
-
-4.Enjoy!
 
 มีฟีเจอร์อะไรบ้าง?
 
