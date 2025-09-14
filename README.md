@@ -6,7 +6,7 @@ ESP32-S2-BAD-USD
 
 2.ไปที่เว็บ https://espressif.github.io/esptool-js/
 
-3.กดเชื่อมบอร์ดและอัพโหลดไฟล์ code.bin เข้าไปในเว็บและกด flash ได้เลย
+3.กดเชื่อมบอร์ดและอัพโหลดไฟล์ code.bin เข้าไปในเว็บ ตั้ง Flash Address ที่ 0x0 และกด flash ได้เลย
 
 
 
